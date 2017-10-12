@@ -1,0 +1,71 @@
+创建SC
+from pyspark import SparkConf, SparkContext
+
+conf = SparkConf().setMaster("local").setAppName("My App")
+sc = SparkContext(conf = conf)
+
+创建RDD
+1> sc.textFile("URL_data/0614/ID_URL.csv")
+2> sc.parallelize([[1,2],[3,4],[3,6]])
+
+Pair RDD的转化操作
+[[1,2],[3,4],[3,6]]为例
+	rdd.reduceByKey(lambda x,y:x+y) ==> [[1,2],[3,10]]
+	rdd.groupByKey()                ==> [[1,2],[3,[4,6]]]
+	rdd.combineByKey(很多参数)       ==>  多种情况
+	rdd.mapValues(lambda x: x+1)    ==> [[1,3],[3,5],[3,7]]
+	rdd.flatMapValues()				==> 
+	rdd.keys()                      ==> [1,3,3]
+	rdd.values()    			    ==> [2,4,6]
+	rdd.sortByKey()                 ==> [[1,2],[3,4],[3,6]]  排序
+
+针对两个 Pair RDD 的转化操作
+rdd1 = [[1,2],[3,4],[3,6]]
+rdd2 = [[3,9]]
+	rdd1.subtractByKey(rdd2)        ==> [1,2] 去掉key相同的
+	rdd1.join(rdd2)                 ==> [[3,[4,9]] , [3,[6,9]]]  相同key内连接
+	rdd1.rightOuterJoin(rdd2)       ==> [[3,[Some(4),9]] , [3,[Some(6),9]]]  右连接
+	rdd1.leftOuterJoin(rdd2)        ==> [[1,[2,None]] , [3,[4,Some(9)]] , [3,[6,Some(9)]]] 
+	rdd1.cogroup(rdd2)              ==> [[1, [[2],[]]] , [3,[[4,6],[9]]]]  相同键的数据分组到一起
+
+Pair RDD的 行动操作
+[[1,2],[3,4],[3,6]]为例
+	rdd.countByKey()                ==> [[1,1],[3,2]]
+	rdd.collectAsMap()              ==> Map[[1,2],[3,4],[3,6]]  以映射表的形式返回，便于查询
+	rdd.lookup(3)                   ==> [4,6]
+
+
+
+SparkSQL
+SQL的import声明
+	from pyspark.sql import HiveContext, Row
+	from pyspark.sql import SQLContext, Row
+创建sqlCtx
+	hiveCtx = HiveContext(sc)
+	sqlCtx = SQLContext(sc)
+
+一个完整的创建示例：sql.createDataFrame
+	rdd = sc.parallelize([(1,"row1"),(2,"row2"),(3,"row3")])
+	dataFrame = StructType([StructField("field1",IntegerType(),False),
+						    StructField("field2",StringType(),False)])
+	df = sqlCtx.createDataFrame(rdd,dataFrame)
+查看、演示：
+	df.show() 是类似SQL的展示形式，很直观
+	df.collect() 也是可以的
+转换成rdd:
+	rdd = df.rdd  没有括号的
+查询：
+ 	df.select("field1").show()
+
+把df注册成一个Table，就可以使用.sql("SQL语句")
+	sqlCtx.registerDataFrameAsTable(df, "table1")
+	df_result = sqlCtx.sql("SELECT field1 AS f1, field2 as f2 from table1")
+
+
+---------- sqlCtx 的API --------------------------------------------------
+'cacheTable', 'clearCache', 'createDataFrame', 'createExternalTable', 'dropTempTable', 'getConf', 'getOrCreate', 'newSession', 'range', 'read', 'readStream', 'registerDataFrameAsTable', 'registerFunction', 'registerJavaFunction', 'setConf', 'sparkSession', 'sql', 'streams', 'table', 'tableNames', 'tables', 'udf', 'uncacheTable'
+
+---------- df (sqlCtx.createDataFrame()) 的API --------------------------------------------------
+'agg', 'alias', 'approxQuantile', 'cache', 'checkpoint', 'coalesce', 'collect', 'columns', 'corr', 'count', 'cov', 'createGlobalTempView', 'createOrReplaceTempView', 'createTempView', 'crossJoin', 'crosstab', 'cube', 'describe', 'distinct', 'drop', 'dropDuplicates', 'drop_duplicates', 'dropna', 'dtypes', 'explain', 'fillna', 'filter', 'first', 'foreach', 'foreachPartition', 'freqItems', 'groupBy', 'groupby', 'head', 'intersect', 'isLocal', 'isStreaming', 'is_cached', 'join', 'limit', 'na', 'orderBy', 'persist', 'printSchema', 'randomSplit', 'rdd', 'registerTempTable("tableName")', 'repartition', 'replace', 'rollup', 'sample', 'sampleBy', 'schema', 'select', 'selectExpr', 'show', 'sort', 'sortWithinPartitions', 'sql_ctx', 'stat', 'storageLevel', 'subtract', 'take', 'toDF', 'toJSON', 'toLocalIterator', 'toPandas', 'union', 'unionAll', 'unpersist', 'where', 'withColumn', 'withColumnRenamed', 'withWatermark', 'write', 'writeStream'
+
+

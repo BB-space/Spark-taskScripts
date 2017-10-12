@@ -1,0 +1,191 @@
+spark-submit 和 spark-sehll 可以跟的命令
+
+
+HDFS
+hadoop fs -lsr /user/zhoutong | awk '{print $8}' | sed -e 's/[^-][^\/]*\//--/g' -e 's/^/ /' -e 's/-/|/'
+
+ssh  -i .ssh/id_rsa -p 14702 zhoutong@yf-jump.apuscn.com
+
+hadoop fs -ls /user/hive/warehouse/apuscommon.db/xal_basic
+/user/hive/warehouse/apuscommon.db/xal_basic/dt=2017-05-08/*/*/et=register
+
+hadoop fs -ls /user/zhoutong/submit/dt=2017-07-
+
+hadoop fs -ls /user/zhoutong/uniqueID
+hadoop fs -rm -r /user/zhoutong/uniqueID/dt=2017-07-
+hadoop fs -ls /user/zhoutong/aggregatedDF
+hadoop fs -ls /user/zhoutong/Model
+
+spark-  shell 本地
+/opt/spark1/bin/spark-shell --driver-memory 4g --num-executors 3 --executor-memory 8g --executor-cores 4 --conf spark.port.maxRetries=100 --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar,apus-up-0.2-SNAPSHOT.jar
+
+spark-  shell 集群
+ /opt/spark1/bin/spark-shell --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 12g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=4g --jars /data/ml-platform/lib/fastjson-1.2.7.jar,/data/ml-platform/lib/hadoop-xz-1.3.jar,apus-up-0.2-SNAPSHOT.jar
+
+--------------------------------------
+spark-submit  跑数据
+
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 32 --executor-memory 10g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/lib/fastjson-1.2.7.jar --class com.apus.dmp.user.driver.UserIDDataGenerator apus-up-0.2-SNAPSHOT.jar -date $dt -savePath /user/zhoutong/CID/Android8/analysis/submit/dt=$dt -should_fullcross true -android8 true
+
+// Android8
+跑数据
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 32 --executor-memory 10g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/lib/fastjson-1.2.7.jar --class com.apus.dmp.user.driver.UserIDDataGenerator apus-up-0.2-SNAPSHOT.jar -date 2017-08-15 -savePath /user/zhoutong/CID/Android8/analysis/submit/dt=2017-08-15 -should_fullcross true -android8 true
+生成全部数据
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDObservationGenerator apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/Android8/BaseDataUDFCross/Model/ver=1 -useCrossedFeature true -android8 true
+生成某日数据
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDObservationGenerator apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/Android8/BaseDataUDFCross/Model/ver=1 -useCrossedFeature true -android8 true -predictDate 2017-09-01
+// 对某日数据打分
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/Android8/BaseDataUDFCross/Model/ver=1 -trainOrElsePredict false -predictUnknown true -predictDate 2017-09-01
+
+
+训练模型
+>>>>> 生成模型数据 observation
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDObservationGenerator apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseData/Model/ver=1_0630 -useCrossedFeature false -useCH2 false
+
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDObservationGenerator apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataCross/Model/ver=1_0630 -useCrossedFeature true 
+
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDObservationGenerator apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataCross/Model/ver=1_0630 -useCrossedFeature true 
+>>>>> 模型训练
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseData/Model/ver=1_0630 -trainOrElsePredict true -shouldSavePercentile false
+
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataCross/Model/ver=1_0630 -trainOrElsePredict true -shouldSavePercentile false
+
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataCross/Model/ver=1_0630 -trainOrElsePredict true -shouldSavePercentile true
+
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataUDFCross/Model/ver=1_0610_white_v2_label_v2 -trainOrElsePredict true -shouldSavePercentile true
+
+>>>>>> 模型打分
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataUDFCross/Model/ver=1_0610_white_v2_label_v2 -trainOrElsePredict false -predictUnknown true
+
+
+
+>>>>>>> 模型verify
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDModelScoreVerify apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataUDFCross/Model/ver=1_0610_white_v2_label_v2 -untilDate 2017-06-30
+
+模型验证（先生成预测）
+*********** 直接verify unknown 的数据
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataUDFCross/Model/ver=1_0630 -trainOrElsePredict false -predictUnknown true
+
+
+*********** 0. 由IDDataGenerator生成0701的数据
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 32 --executor-memory 10g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDDataGenerator apus-up-0.2-SNAPSHOT.jar -date 2017-07-01 -savePath /user/zhoutong/CID/analysis/submit/dt=2017-07-01
+
+*********** 1. 生成预测日期0701的数据observation，保存到0630模型的trainRowDF_0701
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDObservationGenerator apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseData/Model/ver=1_0630 -useCrossedFeature false -predictDate 2017-07-01
+
+*********** 2.使用模型对0701打分
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseData/Model/ver=1_0630 -trainOrElsePredict false -predictDate 2017-07-01
+
+>>>>>>>> 3.使用verify校验
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelScoreVerify apus-up-0.2-SNAPSHOT.jar -predictDate 2017-07-01 
+
+
+
+---------------------------------- 使用crossfeature---------------------------
+spark-submit  跑数据（使用crossfeature)
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 32 --executor-memory 10g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDDataGenerator apus-up-0.2-SNAPSHOT.jar -date 2017-06-02 -savePath /user/zhoutong/CID/analysis/submitCross/dt=2017-06-02 -should_fullcross true
+
+训练模型
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataCross/Model/ver=1_0630 -trainOrElsePredict true -useCrossedFeature true
+
+
+----------------停用--------------------- 放弃cpu_ser，带脏数据
+
+spark-submit 跑数据（放弃cpu_ser）
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 32 --executor-memory 10g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDDataGenerator apus-up-0.2-SNAPSHOT.jar -date 2017-05-09 -savePath /user/zhoutong/test_dirtyData_noCPU/submit
+
+训练模型 （放弃cpu_ser）
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/test_dirtyData_noCPU/Model/ver=1_0701 -trainOrElsePredict true -predictDate 2017-07-01
+
+使用模型打分 (放弃cpu_ser)
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/spray-json_2.10-1.3.3.jar,/data/ml-platform/fastjson-1.2.7.jar,/data/ml-platform/spark-csv_2.11-1.5.0.jar,/data/ml-platform/commons-csv-1.2.jar --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/test_dirtyData_noCPU/Model/ver=1_0701 -trainOrElsePredict false -predictDate 2017-07-02
+
+
+历史记录 application
+http://hadoop-gateway01.yf.apus.com:17777/history/application_1499224833044_242710/jobs
+
+yf集群登录
+ssh  -i .ssh/id_rsa -p 14702 zhoutong@yf-jump.apuscn.com
+c hadoop-gateway01.yf.apus.com
+ssh 10.10.16.21  登录到gateway03
+
+
+
+
+新集群登录
+上跳板机 aws
+ssh -i .ssh/id_rsa jump.apusapps.com -l zhoutong 
+或者 yf
+ssh  -i .ssh/id_rsa -p 14702 zhoutong@yf-jump.apuscn.com
+## ssh -i ~/.ssh/id_rsa 23.236.118.103 -p 14702
+连接
+ssh 10.65.0.15 
+
+终止任务
+yarn application -kill application_1499224833044_233896
+
+
+
+
+强制类型转换
+val t = sqlContext.asInstanceOf[SQLContext]
+
+
+// Broadcast
+    val a = sc.textFile().map(x => (x,"")).collectAsMap
+    val b = sc.broadcast(a)
+    df.map(x => b.value.getOrElse(x.getAs[String]("id"), null).filter()
+
+
+
+================================后台运行脚本
+nohup ./abc.sh >> abc.out &
+============================================
+/bzdata/query/20170816-01
+
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 16g --executor-cores 4g --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --jars /data/ml-platform/lib/fastjson-1.2.7.jar,/data/ml-platform/lib/hadoop-xz-1.3.jar --class com.apus.dmp.user.driver.ZTScript apus-up-0.2-SNAPSHOT.jar -date 20170601
+
+=========================== 查看历史记录
+yarn logs -applicationId application_1502845388858_327301
+===========================
+
+========== grep
+hdfs dfs -cat name.xz | xz -d | grep puuid
+====================
+
+==========干掉脚本
+[zhoutong@bigdata-wk001.eq-sg-2.apus.com ~]# nohup sh update.sh >update.out &
+[1] 17543
+nohup: ignoring input and redirecting stderr to stdout
+[zhoutong@bigdata-wk001.eq-sg-2.apus.com ~]# ps -ef | grep update.sh
+zhoutong 17543  2256  0 20:27 pts/3    00:00:00 sh update.sh
+zhoutong 25362  2256  0 20:28 pts/3    00:00:00 grep --color=auto update.sh
+[zhoutong@bigdata-wk001.eq-sg-2.apus.com ~]# kill -9 17543
+[1]+  Killed                  nohup sh update.sh > update.out
+[zhoutong@bigdata-wk001.eq-sg-2.apus.com ~]# ps -ef | grep update.sh
+zhoutong  3002  2256  0 20:28 pts/3    00:00:00 grep --color=auto update.sh
+
+
+======= permission denied解决方法
+在本机上：
+ssh-add ~/.ssh/id_rsa
+{}
+======= switch to root
+sudo -i
+sudo su
+
+
+
+ /opt/spark1/bin/spark-shell --master yarn-client  --driver-memory 4g  --num-executors 8  --executor-memory 8g  --executor-cores 2  --conf spark.port.maxRetries=100  --conf spark.driver.maxResultSize=4g  --jars /home/zhoutong/jars/fastjson-1.2.7.jar,/home/zhoutong/jars/hadoop-xz-1.3.jar,apus-up-0.2-SNAPSHOT.jar
+======= 保存文件
+hdfs dfs -getmerge  <src> <localdst>   从HDFS拉文件到worker机
+scp zhoutong@bigdata-worker001.eq-sg-2.apus.com:/home/zhoutong/rdd.csv   从worker机拉到本地
+
+
+===== shell查看文件大小，并判断是否大于等于0  ge大于等于 gt大于
+hdfs dfs -du -h -s anti_dog/infoDF/dt=20170401 | awk '{print $1}'|if [[ $s -ge 0 ]]; then  echo "23"; else echo "3333"; fi
+
+
+
+
+

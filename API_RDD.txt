@@ -1,0 +1,149 @@
+RDD的所有API(Python)
+rdd_1 = [[1,2],[3,4],[3,6]]
+rdd_2 = [1,2,3,4,5,6]
+rdd_3 = [1,2,3]
+rdd_4 = [1,2,3,3]
+
+count:
+	int = rdd.count()
+	# 获得rdd的数据个数
+
+first:
+	rdd.first()
+	# 获得第一个数据
+	#（对于CSV有些不同，first取得是，excel中打开csv显示的最下面的一个数据)
+	# 以rdd_2为例
+	rdd_2.first()
+	>>>1
+
+take:
+	list = rdd.take(10)
+	# 获得前10个
+	# (对于CSV有些不同，first取得是，excel打开csv从上往下10个数据)
+	# 以rdd_2为例
+	list = rdd_2.take(3)
+	>>>[1,2,3]
+
+top:
+	# 以rdd_2为例
+	list = rdd_2.top(2)
+	>>>[6,5]
+
+collect:
+	list = rdd.collect()
+	# 获得RDD所有的数据
+
+filter:
+	rdd2 = rdd.filter(lambda x:"Python" in x)
+	# 获得rdd中所有带有"Python"的数据
+	# filter接受一个返回布尔值的函数
+
+union:
+	errorRDD = rdd.filter(lambda x: "error" in x)
+	warningRDD = rdd.filter(lambda x: "warning" in x)
+	logRDD = errorRDD.union(warningRDD)
+	# 结合两个RDD
+
+distinct:
+	rdd2 = rdd.distinct()
+	# 去除重复的
+
+map:
+	rdd2 = rdd.map(lambda x: x*x)
+	# map接受一个函数，对rdd的每一个数据都执行这个函数
+	rdd = sc.parallelize([1,2,3,4])
+	rdd2 = rdd.map(lambda x: (x,1))
+	rdd2.collect()
+	>>> [(1,1),(2,1),(3,1),(4,1)]
+	# map把一个元素变成一个数组
+
+	# scala 多参数map
+	joinResultRDD2.map(line=> (line._1, line._2._1, line._2._2.get)).first
+
+flatmap:
+	rdd = sc.parallelize(["hello world","another"])
+	# map
+	rdd1 = rdd.map(lambda x:x.split(" "))
+	rdd1.collect()
+	>>> [['hello', 'world'], ['another']]
+	# flatmap
+	rdd2 = rdd.flatmap(lambda x:x.split(" "))
+	rdd2.collect()
+	>>> ["hello","world","another"]
+	# 类似map，不过会把多维数组变成一维的(flat)
+
+reduce:
+	int_sum = rdd.reduce(lambda x,y:x+y)
+	# rdd的所有元素累加
+
+intersection:
+	rdd2 = rdd.intersection(rdd_another)
+	# 只返回两个rdd都有的元素，这个操作会去重
+
+cartesian:
+	rdd2 = rdd.cartesian(rdd_another)
+	# 返回rdd和rdd_another的笛卡尔积
+	# 如['a','b']和[1,2]笛卡尔积得到[('a', 1), ('a', 2), ('b', 1), ('b', 2)]
+	# 一般用于计算用户对各种产品的预期兴趣程度
+	# 或用于求用户相似度的应用
+
+substract:
+
+---> 取样，但是第一个布尔参数的作用未知
+sample:
+	rdd2 = rdd.sample()
+	# 
+
+---> 书p35解释 类似reduce()，但是具体是什么未知
+fold:
+	# 测试过[1,2,3], fold(1,add_func)，得到 11	
+	是对 aggregate的简化，将两个函数都使用同一个
+# rdd 是 [1,2,3,4,5,6,7,8,9,10]
+# scala
+rdd.fold(1)((x,y)=>x+y) --> 结果为60
+
+---> 书p35解释 计算RDD的平均值，替代map()后接fold()的方式
+aggregate:
+# rdd 是 [1,2,3,4,5,6,7,8,9,10]
+# scala
+rdd.aggregate(1)(
+        {(x : Int,y : Int) => x + y},
+        {(a : Int,b : Int) => a + b}
+    ) --> 结果为60
+    接收两个参数(seqOp和combOp)，以及 aggregate() 中的参数是初始值zeroValue
+    首先会执行 (x : Int,y : Int) => x + y  ----> zeroValue+1+2+3+... = 1+55=56
+    然后会执行 (a : Int,b : Int) => a + b  ----> 1 + 56
+
+takeOrdered:
+	# 排序，按提供的顺序返回最前面 n 个元素
+	#>>> sc.parallelize([10, 1, 2, 9, 3, 4, 5, 6, 7]).takeOrdered(6)
+    # [1, 2, 3, 4, 5, 6]
+    #>>> sc.parallelize([10, 1, 2, 9, 3, 4, 5, 6, 7], 2).takeOrdered(6, key=lambda x: -x)
+    # [10, 9, 7, 6, 5, 4]
+
+lookup:
+# scala
+	var rdd1 = sc.makeRDD(Array(("A",0),("A",2),("B",1),("B",2),("C",1)))
+	rdd1.lookup("A") # res0: Seq[Int] = WrappedArray(0, 2)
+	rdd1.lookup("B") # res1: Seq[Int] = WrappedArray(1, 2)
+
+countByValue:
+# scala rdd = (1,2,3,3)
+	rdd.countByValue() # {(1,1),(2,1),(3,2)}
+
+takeOrdered(num)(ordering):
+# scala rdd = (1,2,3,3)
+# 不传ordering就是默认从大到小排列
+	rdd.takeOrdered(2) # {3,3}
+
+
+
+'aggregateByKey', 1
+'cache', 1
+'cartesian', 1
+'checkpoint', 
+'coalesce', 
+'cogroup', 
+'collect', 
+'collectAsMap', 
+'combineByKey', 'context', 'count', 'countApprox', 'countApproxDistinct', 'countByKey', 'countByValue', 'ctx', 'distinct', 'filter', 'first', 'flatMap', 'flatMapValues', 'fold', 'foldByKey', 'foreach', 'foreachPartition', 'fullOuterJoin', 'getCheckpointFile', 'getNumPartitions', 'getStorageLevel', 'glom', 'groupBy', 'groupByKey', 'groupWith', 'histogram', 'id', 'intersection', 'isCheckpointed', 'isEmpty', 'isLocallyCheckpointed', 'is_cached', 'is_checkpointed', 'join', 'keyBy', 'keys', 'leftOuterJoin', 'localCheckpoint', 'lookup', 'map', 'mapPartitions', 'mapPartitionsWithIndex', 'mapPartitionsWithSplit', 'mapValues', 'max', 'mean', 'meanApprox', 'min', 'name', 'partitionBy', 'partitioner', 'persist', 'pipe', 'randomSplit', 'reduce', 'reduceByKey', 'reduceByKeyLocally', 'repartition', 'repartitionAndSortWithinPartitions', 'rightOuterJoin', 'sample', 'sampleByKey', 'sampleStdev', 'sampleVariance', 'saveAsHadoopDataset', 'saveAsHadoopFile', 'saveAsNewAPIHadoopDataset', 'saveAsNewAPIHadoopFile', 'saveAsPickleFile', 'saveAsSequenceFile', 'saveAsTextFile', 'setName', 'sortBy', 'sortByKey', 'stats', 'stdev', 'subtract', 'subtractByKey', 'sum', 'sumApprox', 'take', 'takeOrdered', 'takeSample', 'toDF', 'toDebugString', 'toLocalIterator', 'top', 'treeAggregate', 'treeReduce', 'union', 'unpersist', 'values', 'variance', 'zip', 'zipWithIndex', 'zipWithUniqueId'

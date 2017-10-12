@@ -1,0 +1,72 @@
+dataFrame
+
+制作一个DF
+sc.parallelize(Array(("1","a"),("2","b"),("3","c"))).toDF("key1","key2")
+
+df.col("mac")
+	取到mac这一column,返回结果为column类型
+
+df.groupBy
+
+df.orderBy
+
+df.distinct
+
+df.dropDuplicates(Seq("androidid"))
+	以androidid这列进行去重
+
+// 给df新添加内容全都相同一列，名字是 newColumn，使用lit()添加内容 newContent
+df.withColumn("newColumn",lit('newContent'))
+df.withColumn("newColumn", df("existed_column")*1)
+
+表连接
+df.join:
+val joinedDF = newDF.join(historyDF,Seq("allSixId"),"left_outer")
+
+
+展示
+df.show():
+传一个false参数，可以让过长而省略的显示出来
+df.show(10,false)
+
+排序
+sort(df.("index")) 和 sort((desc("index")))
+joinedDF.sort(desc("index")).show(10)
+
+
+过滤
+filter:
+df.filter(df("et").equalTo("register"))
+df.filter("index is not null")   // index 是其中一个field
+
+
+保存
+df.select("name", "favorite_color").write.save("namesAndFavColors.parquet")
+df.write.mode("overwrite").parquet(savepath)
+
+df 转 rdd：
+1-使用Row的 .toSeq 方法
+df.rdd 得到 RDD[Row]，
+使用Row的方法 .toSeq 把Row变成Seq，然后map
+
+2-另一种
+    val resultRDD = targetDF.map {
+      r =>
+        val resultRDD = targetList.map {
+          str =>
+            val tmp = str + ":" + r.getAs[String](str)
+            tmp
+        }
+        resultRDD
+    }
+
+map处理：
+    val tmpoRDD = joinedDF.map{
+      r =>
+        val id = r.getAs[String]("allSixId")
+        val idx = r.getAs[Long]("index")
+        val tag = r.getAs[String]("tag")
+        val new_tag = id+tag
+        (id,idx,new_tag)
+    }
+

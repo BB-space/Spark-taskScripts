@@ -1,0 +1,17 @@
+'binary',
+'indexOf':
+	Returns the index of the input term
+
+'numFeatures':
+
+'setBinary':
+	If True, term frequency vector will be binary such that non-zero
+    term counts will be set to 1
+    (default: False)
+    这个设置为True之后，代表频率的那个向量就不再是计数的了，而是用0和1表示有没有出现过
+
+'transform':
+	Transforms the input document (list of terms) to term frequency
+    vectors, or transform the RDD of document to RDD of term
+    frequency vectors.
+    统计该“term”在整个语句中出现的次数，但是注意"term"的顺序并不是按照它在句子中的顺序来的

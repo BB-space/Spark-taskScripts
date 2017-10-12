@@ -1,0 +1,7 @@
+API_Row
+equalTo:
+	df.filter(df("et").equalTo("register"))
+
+getAs:
+	row.getAs[String]("tag")
+	获得 Row 的数据， 需要 1.知道所属dataFrame的列名 2.知道数据类型

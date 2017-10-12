@@ -1,0 +1,16 @@
+SC的所有API(Python)
+
+parallelize:
+	rdd = sc.parallelize([[1,2],[3,4],[3,6]])
+	// scala 
+	val rdd = sc.parallelize(List(("id1=123",0,"null"),("id2=234",0,"1"),("id3=345",0,"1"),("id1=456",1,"1"),("id2=200",1,"null"),("id3=333",1,"null")))
+
+	# 构建一个rdd
+
+maekRDD:
+// scala
+	val rdd = sc.makeRDD(Array(1,2,3,4,5,6,7))
+	val rdd = sc.makeRDD(Array(1,2,3,4,5,6,7),2) // 2表示分区个数，如果分区个数不同，不能union
+
+
+'accumulator', 'addFile', 'addPyFile', 'appName', 'applicationId', 'binaryFiles', 'binaryRecords', 'broadcast', 'cancelAllJobs', 'cancelJobGroup', 'defaultMinPartitions', 'defaultParallelism', 'dump_profiles', 'emptyRDD', 'environment', 'getConf', 'getLocalProperty', 'getOrCreate', 'hadoopFile', 'hadoopRDD', 'master', 'newAPIHadoopFile', 'newAPIHadoopRDD', 'parallelize', 'pickleFile', 'profiler_collector', 'pythonExec', 'pythonVer', 'range', 'runJob', 'sequenceFile', 'serializer', 'setCheckpointDir', 'setJobGroup', 'setLocalProperty', 'setLogLevel', 'setSystemProperty', 'show_profiles', 'sparkHome', 'sparkUser', 'startTime', 'statusTracker', 'stop', 'textFile', 'uiWebUrl', 'union', 'version', 'wholeTextFiles'

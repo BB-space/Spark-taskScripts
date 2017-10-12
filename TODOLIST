@@ -1,0 +1,64 @@
+TODOLIST
+
+一、puuid重复率统计，aid adv重复率统计，使用groupBy().agg(collect_list("model"))这种方式
+
+二、确定新的阈值
+	predict之后有针对unknown样本的jDF，然后取不同阈值（0.5,0.3)做verify，查看model_s，如果发现model_s不同的比例和取阈值0.95时一样，就认为阈值调低也没问题
+	(碰上GC问题，半解决workaround)
+	1.首先模型判断为老用户，那说明他以前肯定上报激活过，机型必然会出现过，所以在h_model_s.contains(model_s)为true，如果为false就说明模型判断错误
+		h_model_s.contains(model_s)为false 说明模型肯定判断错误
+		h_model_s.contains(model_s)为true  并不能说明模型判断正确，因为可能是两个使用相同机型的新用户
+		（不过这两个新用户有3个id重复，另3个missing或white或uni，这种情况主观上来看是新用户的几率也确实不高)
+	(出现一个问题，0.95时还能有模型判断错误的，阈值放宽到0.5反而没有了，即0.95时那132个features_value对应的model_s以前)
+		这个问题的原因是用户A是unknown，在day1上报后有一个features_tag，在day4上报时，因为uniqueID池的变化，有了另外一个features_tag，但仍然是unknown。
+		而unknown是按每天存到aggregatedDF里面然后统一变为trainRowDF的，所以问题就出在这个地方——“统一”，统一变的时候就会发生：
+		同一个用户A，即同一套features_value会对应不同的feautres_tag，导致不同的score
+		在trainRowDF中，getAs("label")拿到5L样本，然后取出str_attrs中的Map.get("featureArray").get，单独作为一列，以这一列dropDuplicates，去除掉后，再drop这新增的一列.
+	2. 注意，逻辑有重大问题。
+		应该是取0630 “那一天” 的 unknown进行打分，然后根据 0601~0629 的历史数据去join，现在这种不区分日子的做法是错误的。
+		不区分日子时，历史数据中unknown样本自身都出现过，所以model_s必然出现过（很可能不止一次，该用户可能多次上报），没有意义。
+
+	3.新的流程（对某一天的unknown打分）
+		predictDate 确定对这一天的 unknown样本 打分
+		OBgenerator生成 predictDate 这天的trainRowDF
+		Train使用这个trainRowDF打分，生成 jDF
+		Verify新增时间段参数 historyRexDate 使用正则匹配一段时间作为历史数据库用来join。
+
+		problem：在家不能上传jar包。。。
+		0701的trainRowDF已经生成
+		使用如下命令 对0701打分 生成jDF
+		/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 32 --executor-memory 8g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDModelTrain apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataUDFCross/Model/ver=1_0610_white_v2_label_v2 -trainOrElsePredict false -predictUnknown true -predictDate 2017-07-01
+		使用如下命令，对0701的打分进行验证（历史数据为0601-0630)
+		/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 32 --executor-memory 8g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g --class com.apus.dmp.user.driver.UserIDModelScoreVerify apus-up-0.2-SNAPSHOT.jar -savePath /user/zhoutong/CID/BaseDataUDFCross/Model/ver=1_0610_white_v2_label_v2 -historyRexDate 2017-06-[0-3][0-9] -threshold 0.10
+	4. 0901 新思路
+	去系统APP，因为这些渠道是必然存在刷机行为的，所以肯定能检测到批量安装
+	去异常值，异常值检测
+
+
+三、反作弊统计GP中的安装时间和用户使用日期
+	使用标准差的异常值检测得到 刷机的时间，然后从那一天开始往后找"targetDate"，条件如下：
+		1. 不能有 安装时间戳必须等于安装的app个数（如果小于说明有app在同一毫秒被安装，不符合用户行为）
+		2. 时间上需要连贯，"targetDate"往后至少有 间隔小于2天 的 3次安装记录，且安装记录的app个数小于3
+		3. targetDate 不晚于激活时间，不早于异常值
+
+	新想法，
+	1.增加一列，放入这条记录和上一条记录的日期间隔 ✘
+	2.把异常日期找出来[specialDay1,specailDay2]然后判断它们中间有多少条记录的时间间隔，以及这些时间间隔有没有“连着3条小于5天”
+	3.把fit_count的时间戳改成秒级别的  针对00046c043e952e4b05d98cb32485a82f验证
+		突然发现，是因为把系统的过滤掉了，所以变成这样，15之后还有一堆1
+
+四、提升及时性
+
+
+五、puuid加入规则建立Android 8的模型
+/opt/spark1/bin/spark-submit --master yarn-client --driver-memory 4g --num-executors 16 --executor-memory 8g --executor-cores 4 --conf spark.port.maxRetries=100 --conf spark.driver.maxResultSize=2g  --class com.apus.dmp.user.driver.UserIDDataGenerator apus-up-0.2-SNAPSHOT.jar -android8 true -date 2017-09-02 -savePath /user/zhoutong/CID/Android8/analysis/submit/dt=2017-09-03 -should_fullcross true
+
+
+
+
+
+
+
+
+
+

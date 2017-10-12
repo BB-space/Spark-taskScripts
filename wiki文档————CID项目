@@ -1,0 +1,82 @@
+wiki文档————CID项目
+项目目标：
+获取一些设备相关的信息（6个id），通过机器学习得到各个id不同情况（重复出现、缺失、非重复出现、白名单）的权重。在用户人为修改了部分设备信息（如mac号、安卓序列号、imei等）再次上报激活时，使用模型的参数进行计算，仍能识别出来是同一个用户。
+
+模块：
+UserIDDataGenerator.scala
+UserIDFeatureExtractor.scala
+UserIDObservationGenerator.scala
+UserIDModelTrain.scala
+UserIDLabel.scala
+UserIDModelScoreVerify.scala
+
+
+
+流程：
+UserIDDataGenerator 对数据仓库中的数据进行特征抽取、标注、转换、聚合。
+UserIDObservationGenerator.scala 将经过特征聚合的数据格式化为observation形式。
+UserIDModelTrain.scala 对observation形式的数据进行LR训练
+UserIDModelTrain.scala 读取模型参数，对某一天的数据进行预测
+UserIDModelScoreVerify.scala 使用cid、country、model、installTime检验模型的预测准确率
+
+
+
+代码文件：
+apus-algo
+	|-apus-up
+		|-src
+			|-main
+				|-scala
+					|-com
+						|-apus
+							|-cid
+								|-UserIDDataGenerator.scala
+								|-UserIDFeatureExtractor.scala
+								|-UserIDLabel.scala
+								|-UserIDModelScoreVerify.scala
+								|-UserIDModelTrain.scala
+								|-UserIDObservationGenerator.scala
+
+
+UserIDDataGenerator
+	{
+	逻辑：
+	1.取历史上的出现的每一种advertisingID、androidID、imei、mac、android_serial、cpu_serial
+	2.处理mac号，只去mac中的wlan0端口，清理6个特征id，如果id的值是缺失或命中白名单则将值覆写为missingDataTag或whiteDataTag
+	2.取目标日期中激活用户的数据，包括特征项（6个id）和校验项（cid、country、model(机型））
+		数据源：/user/hive/warehouse/apuscommon.db/xal_basic/dt=2017-07-01/pn=launcher/hour=*/et=filterregister
+	3.以6个特征id作为key，新增一列tag作为标记，使用join的方式检验某个用户的6个特征id是否在历史上出现过
+	（注：使用explode将一条记录的中的数组形式的id，变成多行一列的形式，这样就只用join一次）
+	4.对于重复出现的id，将这一行的tag置为1
+	5.对于没有重复的id，更新到uniqueID记录中。
+	6.将duplicated和duplicated的两个特征或unique和unique的两个特征做了2x2特征交叉。
+	7.特征聚合
+	注：在训练针对android8的模型时，做了处理，使用puuid替代了androidID
+	功能：生成某个日期的训练数据
+	} 
+UserIDFeatureExtractor
+	逻辑
+	先检查id的值是不是已经被标记为missingDataTag或者whiteDataTag
+	然后检查某个id这一行的tag是否为1，如果为1，表示该id重复出现，则将该id的特征置为"duplicated"，反之置为"unique"
+
+UserIDLabel
+	对每一条记录的六个特征id使用制定好的标注规则，进行判断然后给该条样本记录做标注（标记为正样本、负样本或者unknown)
+
+
+UserIDObservationGenerator
+	将特征聚合后的dataFrame变成observation形式
+
+
+UserIDModelTrain
+	使用上面生成的observation进行LR训练
+
+UserIDModelScoreVerify
+	获取模型中打分在0.95以上的，选择每条记录中曾经出现过的id（如androidID、mac、imei)以这些id作为key和历史数据做join。
+	比对该条记录的cid、country、model和历史中记录的cid、country、model，如果country model都相同认为是重复用户，模型判断正确。
+
+
+
+
+
+
+
